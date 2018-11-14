@@ -1,6 +1,9 @@
 from collections import defaultdict
 from prettytable import PrettyTable
 from q2 import read_file
+import sqlite3
+DB_File = "/Users/rahil/Documents/Stevens/SSW 810/HW11/810_startup.db"
+db = sqlite3.connect(DB_File)
 
 class Repository: 
 
@@ -19,8 +22,8 @@ class Repository:
             if cwid in self.students: 
                 print("Error! Duplicate Student CWID!")
             else: 
-                self.students[cwid] = Student(cwid, name, maj_name, self.major)    #Something going wrong here! Instead of Student (cwid, name, major) just do it directly
-    
+                self.students[cwid] = Student(cwid, name, maj_name, self.major)    
+                
     def instructor_reader(self, path): 
         path="instructors.txt"
 
@@ -81,13 +84,9 @@ class Repository:
     
     def instructor_print(self): 
         pt = PrettyTable(field_names=Instructor.instructor_header)      #Accessing instance variables from the class Instructor. Pretty simple (Classname.variables)
-        for instructor in self.instructors.values(): 
-            if instructor._no_of_student:                               #Remove this to display all the instructors
-                pt.add_row(instructor.pretty_table_values())            #Again simply using the classname.methodname to use method inside a class
         
-        # for instructor in self.instructors.values():
-        #     for row in instructor.pt_rows: 
-        #         pt.add_row(instructor.pretty_table_values())
+        for row in db.execute("select i.CWID, i.Name, i.Dept, g.Course, count(g.Student_CWID) as No_of_Students from Instructors i join Grades g on i.CWID = g.Instructor_CWID group by i.CWID, i.Name, i.Dept, g.Course"):
+            pt.add_row(row)
 
         print(pt)
     
@@ -136,25 +135,15 @@ class Instructor:
         
         
     def add_student(self, student_number, course): #if similar course then add a counter in itself, else add a new entry with refreshed counter
-        
-        # If an instructor is visited -> student+=1 otherwise = self._no_of_student[course] = 1 
-        # if cwid not in self._t:  
+          
         self._no_of_student[course] = student_number
-        #     self._t.insert(self._count, cwid)
-        #     self._count+=1
-        # else: 
-        #     temp = self._no_of_student[course]
-        #     temp+=1
-        #     self._no_of_student[course] = temp
 
-        
-    
+
+         
     def pretty_table_values(self): 
         return[self._cwid, self._name, self._department, self._no_of_student.keys(), self._no_of_student.values()]      #Check for ._no of students.key()
 
-   # def pt_rows(): 
-#    for course, count in self.courses.items(): 
-#        yield [self._cwid, self._name, self._department,]
+
 
 
 class Major: 
@@ -196,16 +185,17 @@ class Major:
         return[self._name, list(self._required), list(self._electives)]
 
 def main(): 
+    
     U1 = Repository()
     U1.major_reader('majors.txt')
     U1.student_reader('students.text')
     U1.instructor_reader('instructors.txt')
     U1.grade_reader('grades.txt')
-    print("\nMajors Summary")
-    U1.major_print()
-    print("\nStudent Summary")
-    U1.student_print()
-    print("\nInstructor Summary")
+    # print("\nMajors Summary")
+    # U1.major_print()
+    # print("\nStudent Summary")
+    # U1.student_print()
+    print("\nInstructor Summary (Database)")
     U1.instructor_print()
     
 
